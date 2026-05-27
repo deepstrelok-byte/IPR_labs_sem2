@@ -1,4 +1,4 @@
-#User Service
+# --- User Service ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -21,6 +21,12 @@ spec:
         envFrom:
         - configMapRef: { name: app-config }
         - secretRef: { name: app-secrets }
+        env:
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret # Имя секрета, который мы создаем в k8s/infra/.../secret.yaml
+                key: POSTGRES_PASSWORD
 ---
 apiVersion: v1
 kind: Service
@@ -33,7 +39,7 @@ spec:
   - port: 8000
     targetPort: 8000
 
-#Stats Service
+# --- Stats Service ---
 ---
 apiVersion: apps/v1
 kind: Deployment

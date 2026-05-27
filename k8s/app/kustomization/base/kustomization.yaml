@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - app-services.yaml
+  - config-secrets.yaml
+  - dependencies.yaml
+  - hpa.yaml
+  - ingress.yaml

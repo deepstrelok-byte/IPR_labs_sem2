@@ -1,0 +1,61 @@
+# --- Redis: Кэш/Хранилище ключ-значение ---
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-deployment
+  namespace: lab5
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: redis } }
+  template:
+    metadata: { labels: { app: redis } }
+    spec:
+      containers:
+      - name: redis
+        image: redis:latest
+        ports:
+        - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  # Это имя используется в REDIS_URL
+  name: redis-svc
+  namespace: lab5
+spec:
+  selector: { app: redis }
+  ports:
+  - port: 6379
+    targetPort: 6379
+
+# --- RabbitMQ: Очередь сообщений ---
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq-deployment
+  namespace: lab5
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: rabbitmq } }
+  template:
+    metadata: { labels: { app: rabbitmq } }
+    spec:
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:3-management
+        ports:
+        - containerPort: 5672
+---
+apiVersion: v1
+kind: Service
+metadata:
+  # Это имя используется в RABBITMQ_URL
+  name: rabbitmq-svc
+  namespace: lab5
+spec:
+  selector: { app: rabbitmq }
+  ports:
+  - port: 5672
+    targetPort: 5672
