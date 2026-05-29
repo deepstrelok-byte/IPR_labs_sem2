@@ -3,7 +3,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: user-service-deployment
-  namespace: lab5
 spec:
   replicas: 1
   selector: { matchLabels: { app: user-service } }
@@ -13,31 +12,35 @@ spec:
     spec:
       containers:
       - name: user-service
-        image: lab-app:v1
+        image: lab-app:v17
         imagePullPolicy: IfNotPresent
         command: ["python", "src/main.py"]
         ports:
         - containerPort: 8000
         envFrom:
-        - configMapRef: { name: app-config }
-        - secretRef: { name: app-secrets }
+          - configMapRef:
+              name: app-config
+          - secretRef:
+              name: app-secret
         env:
           - name: POSTGRES_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: postgres-secret # Имя секрета, который мы создаем в k8s/infra/.../secret.yaml
+                name: postgres-secret
                 key: POSTGRES_PASSWORD
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: user-service-svc
-  namespace: lab5
+  labels:
+    app: user-service
 spec:
   selector: { app: user-service }
   ports:
-  - port: 8000
-    targetPort: 8000
+    - name: http
+      port: 8000
+      targetPort: 8000
 
 # --- Stats Service ---
 ---
@@ -45,7 +48,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: stats-service-deployment
-  namespace: lab5
 spec:
   replicas: 1
   selector: { matchLabels: { app: stats-service } }
@@ -55,22 +57,30 @@ spec:
     spec:
       containers:
       - name: stats-service
-        image: lab-app:v1
+        image: lab-app:v17
         imagePullPolicy: IfNotPresent
         command: ["python", "src/main.py", "--stats"]
         ports:
         - containerPort: 8001
         envFrom:
         - configMapRef: { name: app-config }
-        - secretRef: { name: app-secrets }
+        - secretRef: { name: app-secret }
+        env:
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: POSTGRES_PASSWORD
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: stats-service-svc
-  namespace: lab5
+  labels:
+    app: user-service
 spec:
   selector: { app: stats-service }
   ports:
-  - port: 8001
+  - name: http
+    port: 8001
     targetPort: 8001

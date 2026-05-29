@@ -13,3 +13,4 @@ gitpython==3.1.40
 
 fastapi
 uvicorn[standard]
+prometheus-fastapi-instrumentator

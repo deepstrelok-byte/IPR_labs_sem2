@@ -1,104 +1,107 @@
-# Развертывание микросервисного приложения в Kubernetes
+# Развертывание и Наблюдаемость Приложения в Kubernetes (Лаб. №5, 6, 7)
 
-Этот репозиторий содержит все необходимые файлы для развертывания приложения в локальном кластере Kubernetes (например, в Docker Desktop).
+Этот репозиторий содержит все необходимые файлы для развертывания и мониторинга приложения в локальном кластере Kubernetes (например, в Docker Desktop).
 
-Проект демонстрирует два подхода к развертыванию:
-1.  **Лабораторная работа №5:** Простое развертывание с помощью набора YAML-манифестов.
-2.  **Лабораторная работа №6:** Продвинутое развертывание с разделением на "инфраструктуру" и "приложение" с использованием `Kustomize` и `StatefulSet`.
+Проект демонстрирует итеративное развитие от простого развертывания к профессиональной IaC-структуре с наблюдаемостью.
 
 ## Пререквизиты
 
-Для выполнения обеих лабораторных работ необходимо:
-*   Установленный Docker Desktop с включенным Kubernetes.
-*   Установленный `kubectl`.
-*   Установленный Git.
+*   Установлен Docker Desktop с включенным Kubernetes.
+*   Установлен `kubectl`.
+*   Установлен `helm`.
+*   Установлен Git.
 
 ---
 
-## Лабораторная работа №6: Kustomize и StatefulSet (рекомендуемый способ)
+## Лабораторная работа №7: Observability (Prometheus, Grafana)
 
-Этот способ использует профессиональный подход с разделением ответственности и управлением конфигурациями через Kustomize.
+Этот раздел описывает, как развернуть приложение вместе со стеком мониторинга для сбора и визуализации метрик.
 
-### Как запустить
+### Как запустить (с нуля)
 
-**1. Переключитесь на ветку `lab6`:**
+**1. Переключитесь на ветку `lab7`:**
 ```bash
-git checkout lab6
+git checkout lab7
 ```
 
-**2. Соберите локальный Docker-образ:**
-*   Образ собирается с тегом `:v1`, который уже прописан в манифестах.
+**2. Соберите финальный Docker-образ:**
 ```bash
-docker build -t lab-app:v1 .
+docker build -t lab-app:v17 .
 ```
+*(Убедитесь, что в файле `k8s/app/kustomization/base/app-services.yaml` используется именно этот тег).*
 
-**3. Разверните инфраструктуру (PostgreSQL):**
-*   Эта команда создаст неймспейс `lab6-dev`, а также `StatefulSet`, `Service` и `Secret` для базы данных.
-```bash
-kubectl apply -k k8s/infra/kustomization/overlays/dev
-```
-
-**4. Дождитесь готовности базы данных:**
-*   **Это критически важный шаг.** Приложение не запустится, пока база данных не будет готова.
-```bash
-# Наблюдайте, пока под postgres-0 не перейдет в статус Running и READY 1/1
-kubectl get pods,pvc -n lab6-dev -w
-```
-
-**5. Разверните приложение:**
-*   Эта команда развернет все сервисы приложения в том же неймспейсе `lab6-dev`.
-```bash
-kubectl apply -k k8s/app/kustomization/overlays/dev
-```
-
-**6. Настройте доступ и проверьте:**
-*   Добавьте следующую строку в ваш файл `hosts` (`/etc/hosts` на Mac/Linux, `C:\Windows\System32\drivers\etc\hosts` на Windows):
-    ```
-    127.0.0.1 app.lab6.local
-    ```
-    *(Примечание: мы используем `app.lab6.local`, чтобы не конфликтовать с предыдущей лабораторной).*
-*   Откройте в браузере [http://app.lab6.local](http://app.lab6.local). Вы должны увидеть `{"message":"User Service is running!"}`.
-
-**7. Очистка:**
-*   Чтобы удалить все созданные ресурсы, просто удалите неймспейс:
+**3. Установите стек наблюдаемости (Prometheus & Grafana):**
+*   Сначала добавьте репозиторий Helm:
     ```bash
-    kubectl delete namespace lab6-dev
+    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    helm repo update
     ```
-
----
-
-## Лабораторная работа №5: Простое развертывание (для истории)
-
-Этот подход использует простой набор YAML-файлов и демонстрирует базовые принципы развертывания.
-
-*Все необходимые файлы и инструкции для этой лабораторной находятся в ветке `main`.*
-
-### Как запустить
-
-1.  **Переключитесь на ветку `main`:**
+*   Затем установите `kube-prometheus-stack` в отдельный неймспейс `observability`:
     ```bash
-    git checkout main
+    helm install prometheus prometheus-community/kube-prometheus-stack --namespace observability --create-namespace
     ```
+    *(Установка может занять несколько минут).*
 
-2.  **Соберите локальный Docker-образ:**
+**4. Разверните инфраструктуру (PostgreSQL):**
+```bash
+kubectl kustomize k8s/infra/kustomization/overlays/dev | kubectl apply -f -
+```
+
+**5. Дождитесь готовности базы данных:**
+```bash
+# Ждите, пока под postgres-0 не перейдет в статус Running и READY 1/1
+kubectl get pods -n lab6-dev -w
+```
+
+**6. Разверните приложение:**
+```bash
+kubectl kustomize k8s/app/kustomization/overlays/dev | kubectl apply -f -
+```
+*На этом шаге будет создан `ServiceMonitor`, который автоматически настроит Prometheus на сбор метрик с `user-service`.*
+
+**7. Настройте доступ и проверьте:**
+*   Добавьте строку `127.0.0.1 app.lab6.local` в ваш файл `hosts`.
+*   Откройте в браузере [http://app.lab6.local](http://app.lab6.local). Вы должны увидеть `{"message":"Service is running with Prometheus metrics!"}`.
+
+### Проверка метрик и дашборда
+
+#### 1. Проверка Prometheus
+
+1.  Пробросьте порт для доступа к Prometheus UI:
     ```bash
-    docker build -t lab-app:v1 .
+    kubectl port-forward svc/prometheus-operated 9090:9090 -n observability
     ```
+2.  Откройте `http://localhost:9090` в браузере.
+3.  Перейдите в меню **Status -> Targets**. Вы должны увидеть цель для `user-service` в состоянии **UP**.
 
-3.  **Разверните все компоненты в Kubernetes:**
-    *   Убедитесь, что все имена образов (`image: lab-app:v1`) в файлах `k8s/03-app-services.yaml` соответствуют тегу, с которым вы собрали образ.
-    *   Примените все манифесты из папки `k8s/`:
+**Скриншот №1: Prometheus Targets**
+![Prometheus Targets](docs/screenshots/lab7/Screenshot%20from%202026-05-29%2018-02-45.png)
+
+
+#### 2. Проверка Grafana
+
+1.  Получите пароль администратора Grafana:
     ```bash
-    kubectl apply -f k8s/
+    kubectl get secret prometheus-grafana -n observability -o jsonpath="{.data.admin-password}" | base64 --decode
     ```
+2.  Пробросьте порт для доступа к Grafana:
+    ```bash
+    kubectl port-forward svc/prometheus-grafana 3000:80 -n observability
+    ```
+3.  Зайдите на `http://localhost:3000` (логин `admin`, пароль — полученный выше).
+4.  Создайте новый дашборд и панель с запросом PromQL, например `rate(http_requests_total{job="user-service-monitor/0"}[5m])`.
+5.  Создайте нагрузку (`while true; do curl http://app.lab6.local/; done`), чтобы на графике появились данные.
 
-4.  **Проверьте доступ**, настроив файл `hosts` для `app.lab5.local` и открыв его в браузере.
+**Скриншот №2: Дашборд Grafana**
 
-## Основные этапы отладки (пройденные в ходе работ)
+![Grafana Dashboard](docs/screenshots/lab7/Screenshot%20from%202026-05-29%2002-08-49.png)
 
-В процессе развертывания были решены следующие типовые проблемы:
-*   **`ImagePullBackOff`:** Исходная проблема с приватными образами на GHCR была решена переходом на локальную сборку.
-*   **`EOFError` в логах:** Проблема была вызвана наличием `input()` в коде. Решено полным рефакторингом `main.py` для запуска в режиме веб-сервера.
-*   **`ModuleNotFoundError`:** Проблема отсутствия `fastapi` и `uvicorn` была решена их добавлением в `requirements.txt`.
-*   **Проблема с кэшированием образа:** Необновляемый образ в Docker Desktop был "побежден" использованием версионированных тегов (`:v1`, `:v2`...).
-*   **Ошибки Ingress и Metrics Server:** Проблемы решены ожиданием полной готовности подов и добавлением флага `--kubelet-insecure-tls` для Metrics Server в среде Docker Desktop.
+
+### Очистка
+
+Чтобы удалить все созданные ресурсы, выполните:
+```bash
+kubectl delete namespace lab6-dev
+helm uninstall prometheus -n observability
+kubectl delete namespace observability
+```

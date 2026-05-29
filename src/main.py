@@ -1,45 +1,28 @@
-
+import argparse
+import uvicorn
 import sys
-import argparse  # Импортируем для разбора аргументов
-import uvicorn   # Импортируем веб-сервер
-
-# ==============================================================
-# Здесь должно быть ваше FastAPI приложение
-# Если его нет, создадим простейшую "заглушку"
-# ==============================================================
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 
-app = FastAPI()
+# 1. СОЗДАЕМ И ИНСТРУМЕНТИРУЕМ ПРИЛОЖЕНИЕ
+app = FastAPI(title="Lab7 App")
+
+# Инструментация метрик. Библиотека сама создаст эндпоинт /metrics
+# и стандартные метрики, такие как http_requests_total.
+Instrumentator().instrument(app).expose(app)
 
 @app.get("/")
 def read_root():
-    return {"message": "User Service is running!"}
-
-# ==============================================================
-
-
-def run_stats_mode():
-    """Функция, которая будет работать в режиме сбора статистики."""
-    print("Stats Service запущен. Ожидание сообщений...")
-    # В реальном приложении здесь будет код, который подключается к RabbitMQ
-    # и слушает сообщения. Сейчас мы просто запустим бесконечный цикл,
-    # чтобы контейнер не завершал работу.
-    import time
-    while True:
-        time.sleep(3600) # "Спим" час, чтобы не нагружать процессор
+    # Просто возвращаем ответ. Библиотека сама посчитает запрос.
+    return {"message": "Service is running with Prometheus metrics!"}
 
 
+# 2. ЛОГИКА ЗАПУСКА
 if __name__ == "__main__":
-    # Создаем парсер аргументов командной строки
     parser = argparse.ArgumentParser(description="Запуск сервиса.")
     parser.add_argument("--stats", action="store_true", help="Запустить в режиме сбора статистики.")
     args = parser.parse_args()
 
-    # Проверяем, был ли передан флаг --stats
-    if args.stats:
-        # Если да, запускаем режим статистики
-        run_stats_mode()
-    else:
-        # Если нет, запускаем основной веб-сервер (user-service)
-        print("User Service запущен. Запуск веб-сервера Uvicorn...")
-        uvicorn.run(app, host="0.0.0.0", port=8000)
+    port_to_run = 8001 if args.stats else 8000
+    print(f"Запускаю веб-сервер на порту {port_to_run}...")
+    uvicorn.run("main:app", host="0.0.0.0", port=port_to_run, reload=False)

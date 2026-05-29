@@ -4,7 +4,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis-deployment
-  namespace: lab5
 spec:
   replicas: 1
   selector: { matchLabels: { app: redis } }
@@ -22,7 +21,6 @@ kind: Service
 metadata:
   # Это имя используется в REDIS_URL
   name: redis-svc
-  namespace: lab5
 spec:
   selector: { app: redis }
   ports:
@@ -35,7 +33,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: rabbitmq-deployment
-  namespace: lab5
+
 spec:
   replicas: 1
   selector: { matchLabels: { app: rabbitmq } }
@@ -53,7 +51,7 @@ kind: Service
 metadata:
   # Это имя используется в RABBITMQ_URL
   name: rabbitmq-svc
-  namespace: lab5
+
 spec:
   selector: { app: rabbitmq }
   ports:

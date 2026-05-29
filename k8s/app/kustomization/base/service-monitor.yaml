@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: user-service-monitor
+  labels:
+    # Эта метка говорит Prometheus Operator'у, что этот монитор для него
+    release: prometheus
+spec:
+  # В каком неймспейсе искать сервисы
+  namespaceSelector:
+    matchNames:
+      - lab6-dev
+  selector:
+    matchLabels:
+      app: user-service # Искать сервис с этой меткой
+  endpoints:
+    - port: http      # Собирать метрики с порта с именем 'http'
+      path: /metrics  # Путь, где находятся метрики
+      interval: 15s   # Интервал сбора
