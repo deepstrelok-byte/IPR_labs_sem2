@@ -12,7 +12,7 @@ spec:
     spec:
       containers:
       - name: user-service
-        image: lab-app:v17
+        image: lab-app:v18
         imagePullPolicy: IfNotPresent
         command: ["python", "src/main.py"]
         ports:
@@ -28,6 +28,12 @@ spec:
               secretKeyRef:
                 name: postgres-secret
                 key: POSTGRES_PASSWORD
+                  # Переменные для трейсинга
+          - name: OTEL_SERVICE_NAME
+            value: "user-service"
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+                         # Используем HTTP порт 4318
+            value: "http://tempo.observability:4318/v1/traces"
 ---
 apiVersion: v1
 kind: Service
@@ -57,7 +63,7 @@ spec:
     spec:
       containers:
       - name: stats-service
-        image: lab-app:v17
+        image: lab-app:v18
         imagePullPolicy: IfNotPresent
         command: ["python", "src/main.py", "--stats"]
         ports:

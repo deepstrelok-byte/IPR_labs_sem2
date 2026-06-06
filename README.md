@@ -96,6 +96,20 @@ kubectl kustomize k8s/app/kustomization/overlays/dev | kubectl apply -f -
 
 ![Grafana Dashboard](docs/screenshots/lab7/Screenshot%20from%202026-05-29%2002-08-49.png)
 
+#### 3. Проверка распределенного трейсинга в Tempo
+
+1.  В Grafana перейдите в **Connections -> Data sources -> Add new data source**. Выберите **Tempo** и в поле URL укажите `http://tempo.observability:3200`. Нажмите **Save & test**.
+2.  Сделайте несколько запросов к приложению, чтобы сгенерировать трейсы:
+    ```bash
+    curl http://app.lab6.local/
+    ```
+3.  В Grafana перейдите в раздел **Explore** (иконка компаса) и выберите источник данных **Tempo**.
+4.  Нажмите **Run query**. В результатах должен появиться трейс от `user-service`.
+
+**Скриншот №3: Трейс в Grafana Tempo**
+
+
+![Tempo Trace](docs/screenshots/lab7/Screenshot%20from%202026-06-06%2020-23-40.png)
 
 ### Очистка
 
@@ -103,5 +117,6 @@ kubectl kustomize k8s/app/kustomization/overlays/dev | kubectl apply -f -
 ```bash
 kubectl delete namespace lab6-dev
 helm uninstall prometheus -n observability
+helm uninstall tempo -n observability
 kubectl delete namespace observability
 ```
