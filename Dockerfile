@@ -17,12 +17,6 @@ COPY pyproject.toml .
 # Устанавливаем Python зависимости
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем исходный код
-COPY src/ ./src/
-COPY tests/ ./tests/
-
-# Запускаем тесты
-#RUN pytest tests/ --cov=src --cov-report=xml:coverage.xml --junitxml=test-reports/junit.xml
 
 # ---------------------------
 # Финальный образ

@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: stats-service-monitor # Новое имя
+  labels:
+    release: prometheus
+spec:
+  namespaceSelector:
+    matchNames:
+      - lab6-dev
+  selector:
+    matchLabels:
+      app: stats-service # Искать сервис с этой меткой
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
